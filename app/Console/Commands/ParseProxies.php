@@ -7,10 +7,12 @@ use Illuminate\Console\Command;
 class ParseProxies extends Command
 {
     protected $signature = 'parse:proxies
-        {--type= : Формат полей: ip | ip,port | ip,port,login,password}
+        {--only= : Формат полей для вывода: ip | ip,port | ip,port,login,password}
         {--format=object : Формат вывода: object | string}
         {--input_file= : Путь к файлу (ip:port:login:password)}
-        {--output_file= : Путь к файлу для сохранения JSON (например: storage/output/proxies.json)}';
+        {--output_file= : Путь к файлу для сохранения JSON (например: storage/output/proxies.json)}
+        {--login_filter= : Фильтровать только по указанному логину}';
+
 
     protected $description = 'Парсит строки ip:port:login:password и сохраняет JSON в разных форматах';
 
@@ -18,8 +20,9 @@ class ParseProxies extends Command
     {
         $inputFile = $this->option('input_file');
         $outputFile = $this->option('output_file');
-        $type = $this->option('type') ?? 'ip,port,login,password';
+        $only = $this->option('only') ?? 'ip,port,login,password';
         $format = $this->option('format') ?? 'object';
+        $loginFilter = $this->option('login_filter');
 
         if (!$inputFile || !file_exists($inputFile)) {
             $this->error('Файл не найден или не указан. Используйте --input_file=путь_к_файлу');
@@ -43,7 +46,11 @@ class ParseProxies extends Command
                 'password' => $parts[3] ?? null,
             ];
 
-            switch ($type) {
+            if ($loginFilter && $entry['login'] !== $loginFilter) {
+                continue;
+            }
+
+            switch ($only) {
                 case 'ip':
                     $parsed[] = $format === 'string'
                         ? $entry['ip']
